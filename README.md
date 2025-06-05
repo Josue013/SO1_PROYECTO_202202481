@@ -25,5 +25,5 @@
 ---
 
 <p align="center">
-  <a href="#"><img src="https://media1.tenor.com/m/fWKZ6aYM9eEAAAAC/gundam-gundam-the-witch-from-mercury.gif" width="800px"/></a>
+  <a href="#"><img src="https://pa1.aminoapps.com/6268/f62e12b00eb0a4b5b45d563e93f15f4582495c29_hq.gif" width="800px"/></a>
 </p>
