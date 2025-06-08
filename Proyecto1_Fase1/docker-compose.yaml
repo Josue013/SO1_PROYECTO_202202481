@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  backend:
+    image: josue013/sistema-monitoreo-backend:latest
+    container_name: monitoreo-backend
+    ports:
+      - "3000:3000"
+    networks:
+      - monitoreo-network
+    restart: unless-stopped
+
+  recollector:
+    image: josue013/sistema-monitoreo-recollector:latest
+    container_name: monitoreo-recollector
+    ports:
+      - "5200:5200"
+    depends_on:
+      - backend
+    networks:
+      - monitoreo-network
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - /proc:/proc
+
+  frontend:
+    image: josue013/sistema-monitoreo-frontend:latest
+    container_name: monitoreo-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    networks:
+      - monitoreo-network
+    restart: unless-stopped
+
+networks:
+  monitoreo-network:
+    driver: bridge
