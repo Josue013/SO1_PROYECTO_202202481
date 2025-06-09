@@ -1,13 +1,44 @@
 version: '3.8'
 
 services:
+  database:
+    build:
+      context: ./Database
+    image: josue013/sistema-monitoreo-database:latest
+    container_name: monitoreo-database
+    ports:
+      - "3306:3306"
+    networks:
+      - monitoreo-network
+    volumes:
+      - so1-db-vol:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=Proyecto1_Fase1
+      - MYSQL_USER=so1_user
+      - MYSQL_PASSWORD=so1_password
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
   backend:
     image: josue013/sistema-monitoreo-backend:latest
     container_name: monitoreo-backend
     ports:
       - "3000:3000"
+    depends_on:
+      database:
+        condition: service_healthy
     networks:
       - monitoreo-network
+    environment:
+      - DB_HOST=database
+      - DB_USER=so1_user
+      - DB_PASSWORD=so1_password
+      - DB_NAME=Proyecto1_Fase1
+      - DB_PORT=3306
     restart: unless-stopped
 
   recollector:
@@ -34,6 +65,9 @@ services:
     networks:
       - monitoreo-network
     restart: unless-stopped
+
+volumes:
+  so1-db-vol:
 
 networks:
   monitoreo-network:

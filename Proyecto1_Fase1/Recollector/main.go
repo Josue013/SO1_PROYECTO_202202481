@@ -109,7 +109,7 @@ func dataCollector() {
 
             // Enviar datos de CPU
             cpuJsonData, _ := json.Marshal(cpuData)
-            resp, err := http.Post("http://localhost:3000/cpu", "application/json", bytes.NewBuffer(cpuJsonData))
+            resp, err := http.Post("http://backend:3000/cpu", "application/json", bytes.NewBuffer(cpuJsonData))
             if err != nil {
                 fmt.Printf("❌ Error enviando CPU: %v\n", err)
             } else {
@@ -119,7 +119,7 @@ func dataCollector() {
 
             // Enviar datos de RAM
             ramJsonData, _ := json.Marshal(ramData)
-            resp, err = http.Post("http://localhost:3000/ram", "application/json", bytes.NewBuffer(ramJsonData))
+            resp, err = http.Post("http://backend:3000/ram", "application/json", bytes.NewBuffer(ramJsonData))
             if err != nil {
                 fmt.Printf("❌ Error enviando RAM: %v\n", err)
             } else {
