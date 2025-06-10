@@ -1,0 +1,9 @@
+cd Proyecto1_Fase1
+
+# Scripts que necesitan sudo
+sudo ./scripts/2_install_modules.sh
+sudo ./scripts/3_cleanup_all.sh
+
+# Scripts que no necesitan sudo
+./scripts/1_stress_containers.sh
+./scripts/4_deploy_app.sh

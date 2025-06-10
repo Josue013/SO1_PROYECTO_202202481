@@ -32,6 +32,10 @@ static int calcular_porcentaje_cpu(void) {
     // Calcular porcentaje
     if (total_time_cpu > 0) {
         porcentaje = (total_usage * 100) / total_time_cpu;
+        // Asegurar que no supere 100%
+        if (porcentaje > 100) {
+            porcentaje = 100;
+        }
     } else {
         porcentaje = 0;
     }
