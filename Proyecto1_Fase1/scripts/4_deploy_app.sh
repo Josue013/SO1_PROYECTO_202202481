@@ -13,7 +13,7 @@ if [ ! -f "docker-compose.yaml" ]; then
 fi
 
 # Limpiar contenedores anteriores
-docker-compose down -v >/dev/null 2>&1
+docker-compose down >/dev/null 2>&1
 
 # Descargar imágenes
 docker-compose pull

@@ -23,7 +23,7 @@ fi
 
 # Detener docker-compose
 if [ -f "docker-compose.yaml" ]; then
-    docker-compose down -v >/dev/null 2>&1
+    docker-compose down >/dev/null 2>&1
     echo "Servicios docker-compose detenidos"
 fi
 
