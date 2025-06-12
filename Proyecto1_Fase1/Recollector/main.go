@@ -1,29 +1,30 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"log"
-	"net/http"
-	"os/exec"
-	"time"
+    "bytes"
+    "context"
+    "encoding/json"
+    "fmt"
+    "log"
+    "net/http"
+    "os/exec"
+    "time"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
+    "github.com/gofiber/fiber/v2"
+    "github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 // Struct para los datos del cpu
 type CpuData struct {
-	Porcentaje float64 `json:"porcentaje"`
+    Porcentaje float64 `json:"porcentaje"`
 }
 
 // Struct para los datos de la ram
 type RamData struct {
-	Total      int64   `json:"total"`
-	Libre      int64   `json:"libre"`
-	Uso        int64   `json:"uso"`
-	Porcentaje float64 `json:"porcentaje"`
+    Total      int64   `json:"total"`
+    Libre      int64   `json:"libre"`
+    Uso        int64   `json:"uso"`
+    Porcentaje float64 `json:"porcentaje"`
 }
 
 // Struct para enviar a la API
@@ -33,10 +34,16 @@ type SystemData struct {
     RamData   RamData `json:"ram_data"`
 }
 
+// Canales para comunicación entre goroutines
+var (
+    cpuChannel = make(chan CpuData, 5)
+    ramChannel = make(chan RamData, 5)
+)
+
 // Función para leer datos del módulo CPU
 func getCpuData() (CpuData, error) {
     var cpuData CpuData
-    
+
     cmd := exec.Command("sh", "-c", "cat /proc/cpu_202202481")
     output, err := cmd.CombinedOutput()
     if err != nil {
@@ -54,7 +61,7 @@ func getCpuData() (CpuData, error) {
 // Función para leer datos del módulo RAM
 func getRamData() (RamData, error) {
     var ramData RamData
-    
+
     cmd := exec.Command("sh", "-c", "cat /proc/ram_202202481")
     output, err := cmd.CombinedOutput()
     if err != nil {
@@ -69,72 +76,150 @@ func getRamData() (RamData, error) {
     return ramData, nil
 }
 
-// Función que recolecta y envíar datos cada segundo
-func dataCollector() {
+// Goroutine Recolector de CPU (envía datos al canal)
+func cpuCollector(ctx context.Context) {
     ticker := time.NewTicker(1 * time.Second)
     defer ticker.Stop()
 
     for {
         select {
+        case <-ctx.Done():
+            return
         case <-ticker.C:
-            fmt.Println("🔄 Recolectando datos del sistema...")
-
-            // Obtener datos de CPU
             cpuData, err := getCpuData()
             if err != nil {
                 fmt.Printf("❌ Error obteniendo datos CPU: %v\n", err)
                 continue
             }
 
-            // Obtener datos de RAM
+            // Enviar al canal (no bloqueante)
+            select {
+            case cpuChannel <- cpuData:
+                // Dato enviado al canal
+            default:
+                fmt.Println("⚠️ Canal CPU lleno, saltando dato")
+            }
+        }
+    }
+}
+
+// Goroutine Recolector de RAM (envía datos al canal)
+func ramCollector(ctx context.Context) {
+    ticker := time.NewTicker(1 * time.Second)
+    defer ticker.Stop()
+
+    for {
+        select {
+        case <-ctx.Done():
+            return
+        case <-ticker.C:
             ramData, err := getRamData()
             if err != nil {
                 fmt.Printf("❌ Error obteniendo datos RAM: %v\n", err)
                 continue
             }
 
-            // Crear estructura de datos del sistema
-            systemData := SystemData{
-                Timestamp: time.Now().Format("2006-01-02 15:04:05"),
-                CpuUsage:  cpuData.Porcentaje,
-                RamData:   ramData,
+            // Enviar al canal (no bloqueante)
+            select {
+            case ramChannel <- ramData:
+                // Dato enviado al canal
+            default:
+                fmt.Println("⚠️ Canal RAM lleno, saltando dato")
             }
-
-            // Mostrar datos en consola
-            fmt.Printf("📊 CPU: %.1f%% | RAM: %dMB/%dMB (%.1f%%)\n", 
-                systemData.CpuUsage, 
-                ramData.Uso, 
-                ramData.Total, 
-                float64(ramData.Porcentaje))
-
-            // Enviar datos de CPU
-            cpuJsonData, _ := json.Marshal(cpuData)
-            resp, err := http.Post("http://backend:3000/cpu", "application/json", bytes.NewBuffer(cpuJsonData))
-            if err != nil {
-                fmt.Printf("❌ Error enviando CPU: %v\n", err)
-            } else {
-                resp.Body.Close()
-                fmt.Printf("✅ CPU enviada: %.1f%%\n", cpuData.Porcentaje)
-            }
-
-            // Enviar datos de RAM
-            ramJsonData, _ := json.Marshal(ramData)
-            resp, err = http.Post("http://backend:3000/ram", "application/json", bytes.NewBuffer(ramJsonData))
-            if err != nil {
-                fmt.Printf("❌ Error enviando RAM: %v\n", err)
-            } else {
-                resp.Body.Close()
-                fmt.Printf("✅ RAM enviada: %.1f%%\n", ramData.Porcentaje)
-            }
-
-            fmt.Println("════════════════════════════════════════════════")
         }
     }
 }
 
-// Endpoints de Fiber
-func setupRoutes(app *fiber.App) {
+// Goroutine Procesador de datos (recibe de canales y envía al backend)
+func dataProcessor(ctx context.Context) {
+    var lastCpuData CpuData
+    var lastRamData RamData
+    var hasCpu, hasRam bool
 
+    for {
+        select {
+        case <-ctx.Done():
+            return
+
+        case cpuData := <-cpuChannel:
+            lastCpuData = cpuData
+            hasCpu = true
+
+            // Si tenemos ambos datos, procesar
+            if hasRam {
+                processSystemData(lastCpuData, lastRamData)
+            }
+
+        case ramData := <-ramChannel:
+            lastRamData = ramData
+            hasRam = true
+
+            // Si tenemos ambos datos, procesar
+            if hasCpu {
+                processSystemData(lastCpuData, lastRamData)
+            }
+        }
+    }
+}
+
+// Función que procesa y envía los datos
+func processSystemData(cpuData CpuData, ramData RamData) {
+    // Crear estructura de datos del sistema
+    systemData := SystemData{
+        Timestamp: time.Now().Format("2006-01-02 15:04:05"),
+        CpuUsage:  cpuData.Porcentaje,
+        RamData:   ramData,
+    }
+
+    // Mostrar datos en consola
+    fmt.Printf("📊 CPU: %.1f%% | RAM: %dMB/%dMB (%.1f%%)\n",
+        systemData.CpuUsage,
+        ramData.Uso,
+        ramData.Total,
+        float64(ramData.Porcentaje))
+
+    // Enviar datos de CPU al backend
+    cpuJsonData, _ := json.Marshal(cpuData)
+    resp, err := http.Post("http://backend:3000/cpu", "application/json", bytes.NewBuffer(cpuJsonData))
+    if err != nil {
+        fmt.Printf("❌ Error enviando CPU: %v\n", err)
+    } else {
+        resp.Body.Close()
+        fmt.Printf("✅ CPU enviada: %.1f%%\n", cpuData.Porcentaje)
+    }
+
+    // Enviar datos de RAM al backend
+    ramJsonData, _ := json.Marshal(ramData)
+    resp, err = http.Post("http://backend:3000/ram", "application/json", bytes.NewBuffer(ramJsonData))
+    if err != nil {
+        fmt.Printf("❌ Error enviando RAM: %v\n", err)
+    } else {
+        resp.Body.Close()
+        fmt.Printf("✅ RAM enviada: %.1f%%\n", ramData.Porcentaje)
+    }
+
+    fmt.Println("════════════════════════════════════════════════")
+}
+
+// Función que recolecta y envía datos usando canales
+func dataCollectorWithChannels() {
+    // Crear contexto para manejo limpio de cierre
+    ctx, cancel := context.WithCancel(context.Background())
+    defer cancel()
+
+    // Iniciar las 3 goroutines
+    go cpuCollector(ctx)
+    go ramCollector(ctx)
+    go dataProcessor(ctx)
+
+    fmt.Println("🚀 Sistema de recolección con canales iniciado")
+
+    // Mantener las goroutines corriendo
+    select {}
+}
+
+// Endpoints de Fiber (exactamente iguales que antes)
+func setupRoutes(app *fiber.App) {
     // Endpoint de prueba
     app.Get("/", func(c *fiber.Ctx) error {
         return c.JSON(fiber.Map{
@@ -194,7 +279,7 @@ func setupRoutes(app *fiber.App) {
 
 func main() {
     fmt.Println("🚀 Iniciando Sistema de Monitoreo - SO1 Proyecto Fase 1")
-    fmt.Println("📡 Recolector de métricas del sistema")
+    fmt.Println("📡 Recolector de métricas del sistema con canales")
 
     // Crear aplicación Fiber
     app := fiber.New(fiber.Config{
@@ -211,8 +296,8 @@ func main() {
     // Configurar rutas
     setupRoutes(app)
 
-    // Iniciar recolector de datos en goroutine
-    go dataCollector()
+    // Iniciar recolector de datos con canales en goroutine
+    go dataCollectorWithChannels()
 
     // Iniciar servidor
     fmt.Println("🌐 Servidor iniciado en puerto 5200")
@@ -221,6 +306,6 @@ func main() {
     fmt.Println("   GET /cpu     - Datos de CPU")
     fmt.Println("   GET /ram     - Datos de RAM")
     fmt.Println("   GET /system  - Datos completos del sistema")
-    
+
     log.Fatal(app.Listen(":5200"))
 }
