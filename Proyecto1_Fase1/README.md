@@ -520,6 +520,8 @@ La base de datos representa el fundamento de persistencia del sistema, garantiza
 ### 📋 Objetivo del componente
 El **Frontend** es la interfaz de usuario desarrollada en React con Vite que proporciona una experiencia visual moderna e interactiva para monitorear las métricas del sistema en tiempo real. Su función principal es consumir los datos del backend y presentarlos de manera intuitiva mediante gráficas animadas y estadísticas detalladas.
 
+![alt text](./imgs/Front.png)
+
 ### ⚙️ Funcionalidad general
 
 El frontend implementa un **dashboard interactivo** con actualizaciones en tiempo real y animaciones fluidas:
