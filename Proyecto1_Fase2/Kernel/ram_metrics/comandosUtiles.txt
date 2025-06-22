@@ -1,0 +1,132 @@
+# COMANDOS BÁSICOS DEL MÓDULO
+# ==========================
+
+# Compilar el módulo del kernel
+make all
+# Explicación: Compila el código fuente .c y genera el archivo .ko (kernel object)
+
+# Limpiar archivos generados por la compilación
+make clean
+# Explicación: Elimina archivos temporales (.o, .ko, .mod, etc.) para una compilación limpia
+
+# Limpiar el buffer de mensajes del kernel
+sudo dmesg -C
+# Explicación: Borra todos los mensajes anteriores del kernel para ver solo los nuevos
+
+# Ver mensajes del kernel
+sudo dmesg
+# Explicación: Muestra los mensajes del kernel, útil para ver errores o confirmaciones
+
+# Cargar el módulo en el kernel
+sudo insmod ram_202202481.ko
+# Explicación: Inserta el módulo en el kernel, creando el archivo /proc/ram_202202481
+
+# Descargar el módulo del kernel
+sudo rmmod ram_202202481
+# Explicación: Remueve el módulo del kernel y elimina el archivo /proc/ram_202202481
+
+# COMANDOS DE VERIFICACIÓN
+# ========================
+
+# Ver si el módulo está cargado
+lsmod | grep ram_202202481
+# Explicación: Lista todos los módulos cargados y filtra por nuestro módulo
+
+# Probar la funcionalidad del módulo
+cat /proc/ram_202202481
+# Explicación: Lee el contenido del archivo proc que genera nuestro módulo (JSON con info de RAM)
+
+# Ver información detallada del módulo
+modinfo ram_202202481.ko
+# Explicación: Muestra metadatos del módulo (autor, descripción, licencia, versión, etc.)
+
+# Ver solo los últimos mensajes del kernel
+sudo dmesg | tail -10
+# Explicación: Muestra las últimas 10 líneas de los mensajes del kernel
+
+# COMANDOS DE DEPURACIÓN
+# ======================
+
+# Ver mensajes en tiempo real
+sudo dmesg -w
+# Explicación: Muestra mensajes del kernel en tiempo real (similar a tail -f)
+
+# Verificar el formato del archivo del módulo
+file ram_202202481.ko
+# Explicación: Muestra información sobre el tipo de archivo y arquitectura
+
+# Ver dependencias del módulo
+objdump -p ram_202202481.ko | grep NEEDED
+# Explicación: Lista las dependencias del módulo (librerías que necesita)
+
+# Verificar la estructura del módulo
+readelf -h ram_202202481.ko
+# Explicación: Muestra la cabecera ELF del módulo para verificar compatibilidad
+
+# COMANDOS DE MONITOREO
+# =====================
+
+# Monitorear la RAM en tiempo real usando el módulo
+watch -n 1 'cat /proc/ram_202202481'
+# Explicación: Ejecuta cat cada segundo para ver cambios en tiempo real
+
+# Comparar con información del sistema
+cat /proc/meminfo | head -5
+# Explicación: Muestra información oficial de memoria del sistema para comparar
+
+# Ver uso de memoria del sistema
+free -h
+# Explicación: Comando estándar para ver uso de memoria en formato legible
+
+# SECUENCIA COMPLETA DE DESARROLLO
+# =================================
+
+# 1. Compilar y cargar
+make clean && make all && sudo insmod ram_202202481.ko
+
+# 2. Verificar que funciona
+lsmod | grep ram_202202481 && cat /proc/ram_202202481
+
+# 3. Ver logs
+sudo dmesg | tail -5
+
+# 4. Descargar cuando termines
+sudo rmmod ram_202202481
+
+# COMANDOS DE EMERGENCIA
+# ======================
+
+# Forzar descarga del módulo (si está "stuck")
+sudo rmmod -f ram_202202481
+# Explicación: Fuerza la remoción del módulo aunque esté en uso
+
+# Reiniciar si hay problemas críticos
+sudo reboot
+# Explicación: Reinicia el sistema (todos los módulos se descargan automáticamente)
+
+# Ver todos los módulos cargados
+lsmod
+# Explicación: Lista todos los módulos del kernel actualmente cargados
+
+# Ver información del kernel actual
+uname -r
+# Explicación: Muestra la versión del kernel en ejecución
+
+# COMANDOS ÚTILES ADICIONALES
+# ============================
+
+# Verificar headers del kernel
+ls /lib/modules/$(uname -r)/build
+# Explicación: Verifica que los headers del kernel estén instalados
+
+# Ver espacio ocupado por el módulo
+ls -lh ram_202202481.ko
+# Explicación: Muestra el tamaño del archivo del módulo
+
+# Hacer backup del módulo
+cp ram_202202481.ko ram_202202481_backup.ko
+# Explicación: Crea una copia de seguridad del módulo compilado
+
+# Probar con diferentes usuarios (verificar permisos)
+sudo -u nobody cat /proc/ram_202202481
+# Explicación: Verifica que cualquier usuario pueda leer el archivo proc
