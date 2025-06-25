@@ -1,0 +1,120 @@
+#!/bin/bash
+
+echo "🚀 Desplegando en Kubernetes..."
+
+# Crear namespace
+kubectl create namespace sopes1-fase2 --dry-run=client -o yaml | kubectl apply -f -
+
+# Aplicar manifiestos (corregir rutas)
+echo "📋 Aplicando Python API..."
+kubectl apply -f python.yaml
+
+echo "📋 Aplicando Node.js API..."
+kubectl apply -f nodejs1.yaml
+
+echo "📋 Aplicando Ingress..."
+kubectl apply -f ingress.yaml
+
+# Esperar a que los pods estén listos
+echo "⏳ Esperando a que los pods estén listos..."
+kubectl wait --for=condition=ready pod -l app=python-api -n sopes1-fase2 --timeout=300s
+kubectl wait --for=condition=ready pod -l app=nodejs-api -n sopes1-fase2 --timeout=300s
+
+# Mostrar estado
+echo "📊 Estado del despliegue:"
+kubectl get pods -n sopes1-fase2
+kubectl get services -n sopes1-fase2
+kubectl get ingress -n sopes1-fase2
+
+echo "✅ Despliegue completado!"
+echo "🌐 Obtén la IP del Ingress con: kubectl get ingress -n sopes1-fase2"
+
+==========================================================================================================
+
+ELIMINAR INGRES
+
+# Eliminar ingress actual
+kubectl delete ingress sopes1-ingress -n sopes1-fase2
+
+# Aplicar ingress corregido
+kubectl apply -f ingress.yaml
+
+# Esperar IP
+kubectl get ingress -n sopes1-fase2 -w
+
+==========================================================================================================
+
+LIMPIAR TODO
+
+#!/bin/bash
+
+echo "🧹 LIMPIEZA COMPLETA DEL NAMESPACE sopes1-fase2"
+echo "=" * 60
+
+# 1. Eliminar todos los ingress
+echo "🗑️ Eliminando ingress..."
+kubectl delete ingress --all -n sopes1-fase2
+
+# 2. Eliminar todos los deployments
+echo "🗑️ Eliminando deployments..."
+kubectl delete deployment --all -n sopes1-fase2
+
+# 3. Eliminar todos los services
+echo "🗑️ Eliminando services..."
+kubectl delete service --all -n sopes1-fase2
+
+# 4. Eliminar todos los pods (por si quedan algunos)
+echo "🗑️ Eliminando pods restantes..."
+kubectl delete pods --all -n sopes1-fase2
+
+# 5. Verificar que todo esté limpio
+echo "📊 Verificando limpieza..."
+echo "Pods restantes:"
+kubectl get pods -n sopes1-fase2
+
+echo "Services restantes:"
+kubectl get services -n sopes1-fase2
+
+echo "Ingress restantes:"
+kubectl get ingress -n sopes1-fase2
+
+echo "✅ Limpieza completada!"
+
+LIMPIEZA MANUAL
+
+# 1. Eliminar ingress
+kubectl delete ingress sopes1-ingress -n sopes1-fase2
+
+# 2. Eliminar deployments
+kubectl delete deployment python-api-deployment -n sopes1-fase2
+kubectl delete deployment nodejs-api-deployment -n sopes1-fase2
+
+# 3. Eliminar services
+kubectl delete service python-api-service -n sopes1-fase2
+kubectl delete service nodejs-api-service -n sopes1-fase2
+
+# 4. Verificar que todo esté limpio
+kubectl get all -n sopes1-fase2
+
+
+===========================================================================================================
+
+# Eliminar recursos del proxy NGINX
+kubectl delete ingress sopes1-ingress-proxy -n sopes1-fase2
+kubectl delete deployment metrics-proxy -n sopes1-fase2
+kubectl delete service metrics-proxy-service -n sopes1-fase2
+kubectl delete configmap nginx-proxy-config -n sopes1-fase2
+
+# Verificar que se eliminó
+kubectl get all -n sopes1-fase2 | grep proxy
+
+
+# Script de limpieza completa
+kubectl delete namespace sopes1-fase2
+kubectl create namespace sopes1-fase2
+
+# O limpieza selectiva
+kubectl delete ingress --all -n sopes1-fase2
+kubectl delete deployment --all -n sopes1-fase2
+kubectl delete service --all -n sopes1-fase2
+kubectl delete configmap --all -n sopes1-fase2

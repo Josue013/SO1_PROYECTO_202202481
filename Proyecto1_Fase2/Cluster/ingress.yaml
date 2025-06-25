@@ -1,0 +1,138 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metrics-proxy
+  namespace: sopes1-fase2
+  labels:
+    app: metrics-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: metrics-proxy
+  template:
+    metadata:
+      labels:
+        app: metrics-proxy
+    spec:
+      containers:
+      - name: nginx-proxy
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: nginx-proxy-config
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-proxy-config
+  namespace: sopes1-fase2
+data:
+  nginx.conf: |
+    events {
+        worker_connections 1024;
+    }
+    
+    http {
+        access_log /var/log/nginx/access.log;
+        error_log /var/log/nginx/error.log warn;
+        
+        # Round robin 50/50 real
+        upstream backend_pool {
+            server python-api-service:80 weight=1;
+            server nodejs-api-service:80 weight=1;
+        }
+        
+        server {
+            listen 80;
+            
+            # Ruta raíz para health checks del Load Balancer
+            location / {
+                return 200 "NGINX Proxy OK - Traffic Splitter Ready\nEndpoints: /health, /metrics, /debug\n";
+                add_header Content-Type text/plain;
+            }
+            
+            # Health check - va a Python
+            location /health {
+                proxy_pass http://python-api-service:80/health;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_connect_timeout 10s;
+                proxy_send_timeout 10s;
+                proxy_read_timeout 10s;
+            }
+            
+            # Metrics con round robin real
+            location /metrics {
+                proxy_pass http://backend_pool/metrics;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header Content-Type application/json;
+                proxy_connect_timeout 30s;
+                proxy_send_timeout 30s;
+                proxy_read_timeout 30s;
+            }
+            
+            location /debug {
+                return 200 "NGINX Proxy OK - Round Robin Activo\nUpstream: python-api-service:80, nodejs-api-service:80\n";
+                add_header Content-Type text/plain;
+            }
+        }
+    }
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: metrics-proxy-service
+  namespace: sopes1-fase2
+  labels:
+    app: metrics-proxy
+spec:
+  selector:
+    app: metrics-proxy
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sopes1-ingress-proxy
+  namespace: sopes1-fase2
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: metrics-proxy-service
+            port:
+              number: 80

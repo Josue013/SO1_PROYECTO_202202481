@@ -1,0 +1,18 @@
+# Crear cluster GKE optimizado para capa gratuita
+gcloud container clusters create sopes1-cluster \
+  --zone=us-central1-a \
+  --num-nodes=1 \
+  --tags=allin,allout \
+  --enable-legacy-authorization \
+  --issue-client-certificate \
+  --preemptible \
+  --machine-type=n1-standard-2
+
+# Obtener credenciales del cluster
+gcloud container clusters get-credentials sopes1-cluster --zone=us-central1-a
+
+# Crear namespace
+kubectl create namespace sopes1-fase2
+
+# Verificar que el cluster esté funcionando
+kubectl get nodes

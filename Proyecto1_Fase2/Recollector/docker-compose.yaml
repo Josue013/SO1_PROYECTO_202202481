@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  recollector:
+    image: josue013/sistema-monitoreo-recollector-fase2:latest
+    container_name: recolector-fase2
+    ports:
+      - "5200:5200"
+    environment:
+      # USAR TU IP LOCAL REAL, NO localhost
+      - LOCUST_URL=http://192.168.0.28:8089/receive-data
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - /proc:/proc

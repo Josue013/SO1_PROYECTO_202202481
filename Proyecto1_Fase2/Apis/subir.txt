@@ -1,0 +1,9 @@
+# Construir Python API
+cd Apis/Flask-Api
+docker build -t josue013/sopes1-python-api:latest .
+docker push josue013/sopes1-python-api:latest
+
+# Construir Node.js API
+cd ../Node-Api1
+docker build -t josue013/sopes1-nodejs-api:latest .
+docker push josue013/sopes1-nodejs-api:latest

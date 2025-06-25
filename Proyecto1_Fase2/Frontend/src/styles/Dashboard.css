@@ -1,0 +1,412 @@
+.dashboard {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #242424;
+  padding: 1rem;
+  min-height: 0;
+}
+
+.charts-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: min(5rem, 5vw);
+  width: 100%;
+  max-width: min(1400px, 95vw);
+}
+
+.chart-container {
+  width: min(420px, 45vw);
+  max-width: 500px;
+  min-width: 300px;
+  background-color: #1a1a1a;
+  border-radius: 12px;
+  padding: min(2rem, 2vw);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: transform 0.3s ease;
+  cursor: pointer;
+}
+
+.chart-container:hover {
+  transform: translateY(-5px);
+}
+
+.percentage {
+  font-weight: bold;
+  color: #ffffff;
+  transition: all 0.3s ease;
+  margin-right: 10px;
+}
+
+.chart-container h3 {
+  color: #ffffff;
+  text-align: center;
+  margin: 0 0 1rem 0;
+  font-size: min(1.3rem, 3vw);
+  font-weight: 600;
+}
+
+.chart-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.chart-wrapper {
+  width: min(280px, 35vw);
+  height: min(280px, 35vw);
+  max-width: 300px;
+  max-height: 300px;
+  margin-bottom: 1rem;
+}
+
+.chart-wrapper-ram {
+  width: min(220px, 28vw) !important;
+  height: min(220px, 28vw) !important;
+  max-width: 250px !important;
+  max-height: 250px !important;
+}
+
+/* procesos */
+
+.process-content {
+  display: flex;
+  flex-direction: column;
+  gap: min(12px, 2vw); 
+  height: 100%;
+  justify-content: space-around;
+}
+
+.process-bar-item {
+  margin-bottom: min(8px, 1vw); 
+}
+
+.process-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: min(6px, 0.8vw); 
+  font-size: min(1rem, 2.5vw); 
+  font-weight: 400;
+  color: #ffffff;
+}
+
+.process-count {
+  font-weight: bold;
+  color: #333;
+  background: rgba(255, 255, 255, 0.9);
+  padding: min(3px, 0.6vw) min(12px, 1.8vw); 
+  border-radius: 12px;
+  min-width: min(50px, 7vw); 
+  text-align: center;
+  font-size: min(0.9rem, 2.2vw); 
+}
+
+.progress-bar {
+  width: 100%;
+  height: min(25px, 3.5vw);
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: min(12px, 1.8vw); 
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: min(12px, 1.8vw); 
+  transition: width 0.8s ease-in-out;
+  position: relative;
+}
+
+/* Colores para cada tipo de proceso */
+.progress-fill.total {
+  background: linear-gradient(45deg, #4169E1, #6495ED);
+}
+
+.progress-fill.running {
+  background: linear-gradient(45deg, #FF1493, #FF69B4);
+}
+
+.progress-fill.sleeping {
+  background: linear-gradient(45deg, #9370DB, #BA55D3);
+}
+
+.progress-fill.zombie {
+  background: linear-gradient(45deg, #32CD32, #98FB98);
+}
+
+.progress-fill.stopped {
+  background: linear-gradient(45deg, #FF4500, #FF6347);
+}
+
+/* Efecto de brillo */
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg, 
+    transparent, 
+    rgba(255, 255, 255, 0.4), 
+    transparent
+  );
+  animation: shine 3s infinite;
+}
+
+@keyframes shine {
+  0% { left: -100%; }
+  50% { left: 100%; }
+  100% { left: 100%; }
+}
+
+@media (max-width: 1366px) and (max-height: 768px) {
+  .process-container {
+    min-height: 300px;
+  }
+  
+  .process-content {
+    padding: 10px;
+    gap: 10px;
+  }
+  
+  .process-label {
+    font-size: 12px;
+  }
+  
+  .progress-bar {
+    height: 15px;
+  }
+  
+  .process-count {
+    padding: 2px 8px;
+    font-size: 11px;
+    min-width: 35px;
+  }
+}
+
+@media (max-width: 1280px) {
+  .process-container {
+    min-height: 350px;
+  }
+  
+  .process-content {
+    padding: 10px;
+    gap: 8px;
+  }
+  
+  .process-label {
+    font-size: 14px;
+  }
+  
+  .progress-bar {
+    height: 16px;
+  }
+  
+  .process-count {
+    padding: 4px 10px;
+    font-size: 12px;
+    min-width: 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  .process-content {
+    padding: 15px;
+    gap: 10px;
+  }
+  
+  .process-label {
+    font-size: 13px;
+  }
+  
+  .progress-bar {
+    height: 20px;
+  }
+}
+
+/* Responsive para RAM específico */
+@media (max-width: 1366px) and (max-height: 768px) {
+  .chart-wrapper-ram {
+    width: 185px !important;
+    height: 185px !important;
+  }
+
+}
+
+@media (max-width: 1280px) {
+  .chart-wrapper-ram {
+    width: 210px !important;
+    height: 210px !important;
+  }
+}
+
+.chart-stats {
+  width: 100%;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  transition: background-color 0.3s ease;
+}
+
+.stat-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.color-box {
+  width: 16px;
+  height: 16px;
+  margin-right: 12px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.cpu-used {
+  background-color: #FF6384;
+}
+
+.cpu-free {
+  background-color: #36A2EB;
+}
+
+.ram-used {
+  background-color: #FFCE56;
+}
+
+.ram-free {
+  background-color: #4BC0C0;
+}
+
+.ram-details-compact {
+  margin-top: 0.8rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.detail-compact {
+  display: flex;
+  align-items: center;
+  padding: 0.3rem 0.6rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  font-size: 0.8rem;
+  min-width: fit-content;
+}
+
+.detail-label-small {
+  color: #b0b0b0;
+  font-weight: 500;
+  margin-right: 0.3rem;
+}
+
+.detail-value-small {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Responsive para detalles compactos */
+@media (max-width: 1366px) and (max-height: 768px) {
+  .ram-details-compact {
+    gap: 0.3rem;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+  }
+  
+  .detail-compact {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .ram-details-compact {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .detail-compact {
+    width: 80%;
+    justify-content: center;
+  }
+}
+
+.stat-text {
+  display: flex;
+  justify-content: space-between;
+  flex-grow: 1;
+  color: #ffffff;
+  font-size: min(1rem, 2.5vw);
+}
+
+/* Resoluciones específicas */
+@media (max-width: 1366px) and (max-height: 768px) {
+  .dashboard {
+    padding: 0.5rem;
+  }
+  
+  .charts-row {
+    gap: 1.5rem;
+  }
+  
+  .chart-container {
+    width: 350px;
+    padding: 1rem;
+  }
+  
+  .chart-wrapper {
+    width: 220px;
+    height: 220px;
+  }
+  
+  .chart-container h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .stat-item {
+    margin-bottom: 0.25rem;
+    padding: 0.25rem;
+  }
+}
+
+@media (max-width: 1280px) {
+  .charts-row {
+    gap: 2rem;
+  }
+  
+  .chart-container {
+    width: 380px;
+  }
+  
+  .chart-wrapper {
+    width: 250px;
+    height: 250px;
+  }
+}
+
+@media (max-width: 900px) {
+  .charts-row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .dashboard {
+    padding: 0.5rem;
+  }
+}
+
