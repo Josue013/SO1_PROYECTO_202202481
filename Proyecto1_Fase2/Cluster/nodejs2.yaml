@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodejs-realtime-api-deployment
+  namespace: sopes1-fase2
+  labels:
+    app: nodejs-realtime-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nodejs-realtime-api
+  template:
+    metadata:
+      labels:
+        app: nodejs-realtime-api
+    spec:
+      containers:
+      - name: nodejs-realtime-app
+        image: josue013/sopes1-nodejs-realtime-api:latest
+        ports:
+        - containerPort: 4000
+        env:
+        - name: DB_HOST
+          value: "34.61.65.213"
+        - name: DB_USER
+          value: "root"
+        - name: DB_PASSWORD
+          value: "8AraHXK#EJL4\\Fmq"
+        - name: DB_NAME
+          value: "sopes1_db"
+        - name: DB_PORT
+          value: "3306"
+        - name: PORT
+          value: "4000"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        readinessProbe:
+          httpGet:
+            path: /health  
+            port: 4000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health  
+            port: 4000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nodejs-realtime-api-service
+  namespace: sopes1-fase2
+  labels:
+    app: nodejs-realtime-api
+spec:
+  selector:
+    app: nodejs-realtime-api
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 4000
+    nodePort: 30080  # Puerto fijo para acceso externo
+  type: NodePort  

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Pie } from "react-chartjs-2";
 import * as ChartJS from "chart.js";
-import { obtenerMetricasSistema } from "../utils/generadorDatos";
+import { connectToRealTimeMetrics, disconnectRealTimeMetrics } from "../utils/generadorDatos";
 import gsap from "gsap";
 import "../styles/Dashboard.css";
 
@@ -11,17 +11,19 @@ ChartJS.Chart.register(ChartJS.ArcElement, ChartJS.Tooltip, ChartJS.Legend);
 const Dashboard = () => {
   const [cpuUso, setCpuUso] = useState(0);
   const [ramUso, setRamUso] = useState(0);
+  const [isConnected, setIsConnected] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState(null);
   const chartContainerRefs = useRef([]);
   const percentageRefs = useRef([]);
   const dashboardRef = useRef(null);
   const [ramDetails, setRamDetails] = useState({ total: 0, used: 0, free: 0 });
   const [processData, setProcessData] = useState({
-  total_procesos: 0,
-  procesos_corriendo: 0,
-  procesos_durmiendo: 0,
-  procesos_zombies: 0,
-  procesos_parados: 0
-});
+    total_procesos: 0,
+    procesos_corriendo: 0,
+    procesos_durmiendo: 0,
+    procesos_zombies: 0,
+    procesos_parados: 0
+  });
 
   const [cpuData, setCpuData] = useState({
     labels: ["En uso", "Sin Usar"],
@@ -49,14 +51,12 @@ const Dashboard = () => {
 
   // Animación de entrada suave
   useEffect(() => {
-    // Animación del dashboard principal
     gsap.fromTo(
       dashboardRef.current,
       { opacity: 0, scale: 0.8 },
       { opacity: 1, scale: 1, duration: 1, ease: "back.out(1.7)" }
     );
 
-    // Animación de los contenedores de gráficas
     gsap.fromTo(
       chartContainerRefs.current,
       { y: 100, opacity: 0, rotationY: 45 },
@@ -72,83 +72,22 @@ const Dashboard = () => {
     );
   }, []);
 
-  // Solo alerta cuando está crítico (>90%)
-  const alertaCritica = (element, valor) => {
-    const container = element.closest(".chart-container");
-
-    if (valor > 75) {
-      // Aplicar alerta crítica
-      gsap.to(container, {
-        boxShadow: "0 0 30px rgba(255, 99, 132, 0.8)",
-        duration: 0.8,
-        yoyo: true,
-        repeat: 2,
-        ease: "power2.inOut",
-      });
-    } else {
-      // Resetear el glow cuando baja de 90%
-      gsap.to(container, {
-        boxShadow: "0 8px 32px rgba(75, 192, 192, 0.8)",
-        duration: 0.5,
-        ease: "power2.out",
-      });
-    }
-  };
-
-  // Hover suave solo en los contenedores
-  const handleChartHover = (index) => {
-    gsap.to(chartContainerRefs.current[index], {
-      y: -5,
-      duration: 0.3,
-      ease: "power2.out",
-    });
-  };
-
-  const handleChartLeave = (index) => {
-    gsap.to(chartContainerRefs.current[index], {
-      y: 0,
-      duration: 0.3,
-      ease: "power2.out",
-    });
-  };
-
+  // Conectar a Socket.io al montar el componente
   useEffect(() => {
-  const interval = setInterval(async () => {
-    try {
-      const metricas = await obtenerMetricasSistema();
-
-      const newCpuUso = Math.round(metricas.cpu);
-      const newRamUso = Math.round(metricas.ram);
-
-      // Datos aleatorios para procesos (temporal)
-      const totalProcesos = Math.floor(Math.random() * 50) + 200;
-      const procesosCorreindo = Math.floor(Math.random() * 20) + 10;
-      const procesosDurmiendo = Math.floor(Math.random() * 30) + 50;
-      const procesosZombies = Math.floor(Math.random() * 10) + 2;
-      const procesosPaados = Math.floor(Math.random() * 15) + 5;
+    const handleMetricsUpdate = (data) => {
+      console.log('🔄 Actualizando dashboard con datos:', data);
       
-      const sumaOtros = procesosCorreindo + procesosDurmiendo + procesosZombies + procesosPaados;
-      const totalAjustado = Math.max(totalProcesos, sumaOtros + 10);
-
-      setProcessData({
-        total_procesos: totalAjustado,
-        procesos_corriendo: procesosCorreindo,
-        procesos_durmiendo: procesosDurmiendo,
-        procesos_zombies: procesosZombies,
-        procesos_parados: procesosPaados
-      });
-
-      if (percentageRefs.current[0]) {
-        alertaCritica(percentageRefs.current[0], newCpuUso);
-      }
-      if (percentageRefs.current[1]) {
-        alertaCritica(percentageRefs.current[1], newRamUso);
-      }
+      const newCpuUso = Math.round(data.cpu);
+      const newRamUso = Math.round(data.ram);
 
       setCpuUso(newCpuUso);
       setRamUso(newRamUso);
-      setRamDetails(metricas.ram_details);
+      setRamDetails(data.ram_details);
+      setProcessData(data.processes);
+      setLastUpdate(new Date().toLocaleTimeString());
+      setIsConnected(true);
 
+      // Actualizar gráficas
       setCpuData((prev) => ({
         ...prev,
         datasets: [
@@ -168,13 +107,60 @@ const Dashboard = () => {
           },
         ],
       }));
-    } catch (error) {
-      console.error("Error obteniendo métricas:", error);
-    }
-  }, 1000);
 
-  return () => clearInterval(interval);
-}, []);
+      // Alertas críticas
+      if (percentageRefs.current[0]) {
+        alertaCritica(percentageRefs.current[0], newCpuUso);
+      }
+      if (percentageRefs.current[1]) {
+        alertaCritica(percentageRefs.current[1], newRamUso);
+      }
+    };
+
+    const socket = connectToRealTimeMetrics(handleMetricsUpdate);
+
+    // Cleanup al desmontar
+    return () => {
+      disconnectRealTimeMetrics();
+    };
+  }, []);
+
+  // Solo alerta cuando está crítico (>75%)
+  const alertaCritica = (element, valor) => {
+    const container = element.closest(".chart-container");
+
+    if (valor > 75) {
+      gsap.to(container, {
+        boxShadow: "0 0 30px rgba(255, 99, 132, 0.8)",
+        duration: 0.8,
+        yoyo: true,
+        repeat: 2,
+        ease: "power2.inOut",
+      });
+    } else {
+      gsap.to(container, {
+        boxShadow: "0 8px 32px rgba(75, 192, 192, 0.8)",
+        duration: 0.5,
+        ease: "power2.out",
+      });
+    }
+  };
+
+  const handleChartHover = (index) => {
+    gsap.to(chartContainerRefs.current[index], {
+      y: -5,
+      duration: 0.3,
+      ease: "power2.out",
+    });
+  };
+
+  const handleChartLeave = (index) => {
+    gsap.to(chartContainerRefs.current[index], {
+      y: 0,
+      duration: 0.3,
+      ease: "power2.out",
+    });
+  };
 
   const options = {
     responsive: true,
@@ -191,7 +177,6 @@ const Dashboard = () => {
         },
       },
     },
-    // Animación suave de la gráfica
     animation: {
       animateRotate: true,
       animateScale: false,
@@ -202,6 +187,14 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard" ref={dashboardRef}>
+      {/* Indicador de conexión */}
+      <div className={`connection-status ${isConnected ? 'connected' : 'disconnected'}`}>
+        <span className="status-dot"></span>
+        <span>
+          {isConnected ? `En vivo - ${lastUpdate}` : 'Desconectado'}
+        </span>
+      </div>
+
       <div className="charts-row">
         <div
           className="chart-container"
@@ -237,6 +230,7 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+
         <div
           className="chart-container"
           ref={(el) => (chartContainerRefs.current[1] = el)}
@@ -249,7 +243,6 @@ const Dashboard = () => {
               <Pie key="ram-chart" data={ramData} options={options} />
             </div>
             <div className="chart-stats">
-              {/* stat-items en una fila */}
               <div className="ram-stats-row">
                 <div className="stat-item ram-stat">
                   <div className="color-box ram-used"></div>
@@ -379,7 +372,6 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );
