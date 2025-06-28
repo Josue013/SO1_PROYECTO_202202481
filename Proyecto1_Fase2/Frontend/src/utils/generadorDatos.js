@@ -2,7 +2,7 @@ import { io } from 'socket.io-client';
 
 const API_URL = 'http://localhost:3000';
 // Usar IP del nodo + puerto NodePort
-const REALTIME_API_URL = 'http://104.197.132.251:30080'; // IP del nodo + nodePort
+const REALTIME_API_URL = 'http://34.68.209.48:30080'; // IP del nodo + nodePort
 
 // Socket.io client
 let socket = null;

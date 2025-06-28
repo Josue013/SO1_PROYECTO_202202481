@@ -18,7 +18,7 @@ WORKDIR /app
 COPY --from=build /app/recolector ./
 
 # Variable de entorno para Locust
-ENV LOCUST_URL="http://170.150.28.66:8089/receive-data"
+ENV LOCUST_URL="http://170.150.28.90:8089/receive-data"
 
 ENTRYPOINT ["./recolector"]
 

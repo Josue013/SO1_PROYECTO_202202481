@@ -91,6 +91,6 @@ if __name__ == "__main__":
 
 """
 
-locust -f traffic_collector.py --host=http://34.67.58.132:5200
+locust -f traffic_collector.py --host=http://34.44.244.72:5200
 
 """
